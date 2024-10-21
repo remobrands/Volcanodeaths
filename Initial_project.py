@@ -27,6 +27,7 @@ plt.title('Volcanic Eruption Deaths Over Time')
 plt.show()
 
 print("Missing values per column (filtered data):\n", data_filtered.isnull().sum())
+
 data_cleaned = data_filtered.drop_duplicates()
 
 def aggregate_deaths_by_decade(dataframe):
@@ -80,6 +81,7 @@ plt.grid()
 plt.show()
 
 data_improved = filter_data_by_year(data, 1850)
+data_improved
 
 plt.plot(data_improved['Year'], data_improved['Deaths'])
 plt.xlabel('Year')
@@ -88,7 +90,9 @@ plt.title('Volcanic Eruption Deaths Over Time')
 plt.show()
 
 data_improved2 = data_improved.drop_duplicates()
+
 data_decade = aggregate_deaths_by_decade(data_improved2)
+
 data_no_outlier = remove_outliers(data_decade, 'Deaths', iqr_multiplier=1.5)
 data_no_outlier
 
@@ -113,22 +117,55 @@ plt.legend()
 plt.grid()
 plt.show()
 
-x_data = data_no_outlier['Decade'].values
-y_data = data_no_outlier['Deaths'].values
-
 def linear_model(x, a, b):
     return a * x + b
 
-linear_params, _ = curve_fit(linear_model, x_data, y_data)
-y_linear_fit = linear_model(x_data, *linear_params)
+def quadratic_model(x, a, b, c):
+    return a * x**2 + b * x + c
+
+def exponential_model(x, a, b, c):
+    return a * np.exp(b * x) + c
+    
+def logarithmic_model(x, a, b):
+    return a * np.log(b * x)
+
+def fit_and_plot_model(model_func, x_data, y_data, label, color, p0=None):
+    params, _ = curve_fit(model_func, x_data, y_data, p0=p0, maxfev=1000)
+    y_fit = model_func(x_data, *params)
+    plt.plot(x_data, y_fit, label=label, color=color, linewidth=2)
+
+period1 = data_no_outlier[(data_no_outlier['Decade'] >= 1850) & (data_no_outlier['Decade'] <= 1920)]
+period2 = data_no_outlier[(data_no_outlier['Decade'] > 1920) & (data_no_outlier['Decade'] <= 1950)]
+period3 = data_no_outlier[(data_no_outlier['Decade'] > 1950)]
+
+x1, y1 = period1['Decade'].values, period1['Deaths'].values
+x2, y2 = period2['Decade'].values, period2['Deaths'].values
+x3, y3 = period3['Decade'].values, period3['Deaths'].values
 
 plt.figure(figsize=(12, 6))
-plt.plot(x_data, y_data, 'o', label='Actual Deaths', markersize=5)
-plt.plot(x_data, y_linear_fit, color='orange', label='Fitted Linear Model', linewidth=2)
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], 'o', label='Actual Deaths', markersize=5)
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
+fit_and_plot_model(linear_model, x1, y1, 'Linear Model (1850-1920)', 'orange')
+fit_and_plot_model(linear_model, x2, y2, 'Linear Model (1920-1950)', 'green')
+fit_and_plot_model(linear_model, x3, y3, 'Linear Model (1950-Present)', 'red')
+
 plt.xlabel('Decade')
 plt.ylabel('Deaths')
-plt.title('Volcanic Eruption Deaths with Fitted Linear Model and Moving Average')
+plt.title('Piecewise Modeling of Volcanic Eruption Deaths')
+plt.legend()
+plt.grid()
+plt.show()
+
+plt.figure(figsize=(12, 6))
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], 'o', label='Actual Deaths', markersize=5)
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
+fit_and_plot_model(quadratic_model, x1, y1, 'Quadratic Model (1850-1920)', 'orange')
+fit_and_plot_model(linear_model, x2, y2, 'Linear Model (1920-1950)', 'green')
+fit_and_plot_model(quadratic_model, x3, y3, 'Quadratic Model (1950-Present)', 'red')
+
+plt.xlabel('Decade')
+plt.ylabel('Deaths')
+plt.title('Piecewise Modeling of Volcanic Eruption Deaths')
 plt.legend()
 plt.grid()
 plt.show()
