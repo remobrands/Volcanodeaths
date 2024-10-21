@@ -90,9 +90,45 @@ plt.show()
 data_improved2 = data_improved.drop_duplicates()
 data_decade = aggregate_deaths_by_decade(data_improved2)
 data_no_outlier = remove_outliers(data_decade, 'Deaths', iqr_multiplier=1.5)
+data_no_outlier
 
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], marker='o')
 plt.xlabel('Decade')
 plt.ylabel('Deaths')
 plt.title('Volcanic Eruption Deaths Over Time (Without Major Disasters)')
+plt.show()
+
+def moving_average(dataframe, window_size):
+    return dataframe['Deaths'].rolling(window=window_size).mean()
+
+data_no_outlier.loc[:, 'Moving_Average'] = moving_average(data_no_outlier, 3)
+
+plt.figure(figsize=(12, 6))
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], marker='o', label='Deaths')
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='orange', label='Moving Average', linewidth=2)
+plt.xlabel('Decade')
+plt.ylabel('Deaths')
+plt.title('Volcanic Eruption Deaths Over Time (Without Major Disasters) with Moving Average')
+plt.legend()
+plt.grid()
+plt.show()
+
+x_data = data_no_outlier['Decade'].values
+y_data = data_no_outlier['Deaths'].values
+
+def linear_model(x, a, b):
+    return a * x + b
+
+linear_params, _ = curve_fit(linear_model, x_data, y_data)
+y_linear_fit = linear_model(x_data, *linear_params)
+
+plt.figure(figsize=(12, 6))
+plt.plot(x_data, y_data, 'o', label='Actual Deaths', markersize=5)
+plt.plot(x_data, y_linear_fit, color='orange', label='Fitted Linear Model', linewidth=2)
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
+plt.xlabel('Decade')
+plt.ylabel('Deaths')
+plt.title('Volcanic Eruption Deaths with Fitted Linear Model and Moving Average')
+plt.legend()
+plt.grid()
 plt.show()
