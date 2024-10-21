@@ -39,3 +39,21 @@ plt.xlabel('Decade')
 plt.ylabel('Deaths')
 plt.title('Volcanic Eruption Deaths Over Time (Aggregated by Decade)')
 plt.show()
+
+def remove_outliers(dataframe, column):
+    Q1 = dataframe[column].quantile(0.25)
+    Q3 = dataframe[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    filtered_data = dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
+    return filtered_data
+
+data_no_outliers = remove_outliers(data_by_decade, 'Deaths')
+print(data_no_outliers)
+
+plt.plot(data_no_outliers['Decade'], data_no_outliers['Deaths'], marker='o')
+plt.xlabel('Decade')
+plt.ylabel('Deaths')
+plt.title('Volcanic Eruption Deaths Over Time (Without Major Disasters)')
+plt.show()
