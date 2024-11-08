@@ -89,9 +89,9 @@ plt.ylabel('Deaths')
 plt.title('Volcanic Eruption Deaths Over Time')
 plt.show()
 
-data_improved2 = data_improved.drop_duplicates()
+data_improved_filtered = data_improved.drop_duplicates()
 
-data_decade = aggregate_deaths_by_decade(data_improved2)
+data_decade = aggregate_deaths_by_decade(data_improved_filtered)
 
 data_no_outlier = remove_outliers(data_decade, 'Deaths', iqr_multiplier=1.5)
 data_no_outlier
@@ -169,3 +169,29 @@ plt.title('Piecewise Modeling of Volcanic Eruption Deaths')
 plt.legend()
 plt.grid()
 plt.show()
+
+future_decades = np.arange(2020, 2051, 1)
+params_q3, _ = curve_fit(quadratic_model, x3, y3, p0=[1, 0, 1])
+
+future_deaths_q3 = quadratic_model(future_decades, * params_q3)
+future_deaths_q3 = np.maximum(future_deaths_q3, 0)
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], 'o', label='Actual Deaths', markersize=5)
+plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
+
+fit_and_plot_model(quadratic_model, x1, y1, 'Quadratic Model (1850-1920)', 'orange')
+fit_and_plot_model(linear_model, x2, y2, 'Linear Model (1920-1950)', 'green')
+fit_and_plot_model(quadratic_model, x3, y3, 'Quadratic Model (1950-Present)', 'red')
+
+plt.plot(future_decades, future_deaths_q3, label='Quadratic Model (1950-Present) Prediction', color='red', linestyle='--')
+
+plt.xlabel('Decade')
+plt.ylabel('Deaths')
+plt.title('Volcanic Eruption Deaths (Including Predictions for 2020-2030)')
+plt.legend()
+plt.grid()
+plt.show()
+
+print('According to this model, the amount of deaths would go to zero. This is obviously highly unlikely. It is clear, however, that the amount of deaths is decreasing fast and will keep decreasing due to improved education and hazard management.')
