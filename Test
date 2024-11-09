@@ -1,1 +1,59 @@
-print('hi')
+import numpy as np
+import pandas as pd
+from Initial_project import filter_data_by_year, aggregate_deaths_by_decade, remove_outliers, bin_data, moving_average, quadratic_model
+
+# Test filter_data_by_year function
+def test_filter_data_by_year():
+    data = pd.DataFrame({
+        'Year': [1600, 1650, 1700, 1750, 1800],
+        'Deaths': [100, 200, 150, 250, 300]
+    })
+    data_filtered = filter_data_by_year(data, 1700)
+    assert data_filtered['Year'].min() >= 1700, "Data not filtered correctly (min year)"
+    data_filtered = filter_data_by_year(data, 1700, 1800)
+    assert data_filtered['Year'].min() >= 1700, "Data not filtered correctly (min year)"
+    assert data_filtered['Year'].max() <= 1800, "Data not filtered correctly (max year)"
+
+# Test aggregate_deaths_by_decade function
+def test_aggregate_deaths_by_decade():
+    data = pd.DataFrame({
+        'Year': [1600, 1650, 1700, 1750, 1800],
+        'Deaths': [100, 200, 150, 250, 300]
+    })
+    data_by_decade = aggregate_deaths_by_decade(data)
+    assert all((data_by_decade['Decade'] % 10 == 0)), "Decades are not correctly binned"
+    assert (data_by_decade['Deaths'] >= 0).all(), "Aggregated deaths have negative values"
+
+# Test remove_outliers function
+def test_remove_outliers():
+    data = pd.DataFrame({
+        'Year': [1600, 1650, 1700, 1750, 1800],
+        'Deaths': [100, 200, 150, 1000, 300]  # 1000 is an outlier
+    })
+    data_no_outliers = remove_outliers(data, 'Deaths', iqr_multiplier=1.5)
+    assert (data_no_outliers['Deaths'] >= 0).all(), "Outliers not removed correctly (negative deaths)"
+    assert len(data_no_outliers) <= len(data), "Data has not been reduced in size"
+
+# Test bin_data function
+def test_bin_data():
+    data = pd.DataFrame({
+        'Year': [1600, 1650, 1700, 1750, 1800],
+        'Deaths': [100, 200, 150, 250, 300]
+    })
+    binned_data = bin_data(data, 50)
+    assert (binned_data['Binned_Decade'] % 50 == 0).all(), "Binning is not correct"
+    assert (binned_data['Deaths'] >= 0).all(), "Binned deaths have negative values"
+
+# Test moving_average function
+def test_moving_average():
+    data = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    moving_avg = moving_average(data, 3)
+    assert moving_avg.isnull().sum() == 0, "Moving average has NaN values"
+    assert all(moving_avg[1:-1] >= moving_avg[0:-2]), "Moving average is not smooth"
+
+# Test predict_future_deaths function
+def test_predict_future_deaths():
+    future_decades = np.arange(2020, 2051, 10)
+    future_deaths = quadratic_model(future_decades, 1, 0, 1)
+    assert (future_deaths >= 0).all(), "Predicted deaths are negative"
+    assert (future_deaths <= 10000).all(), "Predicted deaths are too high"
