@@ -39,6 +39,7 @@ plt.ylabel('Deaths')
 plt.title('Volcanic Eruption Deaths Over Time')
 plt.show()
 
+# The following is to check whether there are missing values for important columns. It has been noticed that there are no missing values for 'Year' and 'Deaths'
 print("Missing values per column (filtered data):\n", data_filtered.isnull().sum())
 
 # Remove duplicate records
@@ -127,6 +128,7 @@ plt.title('Binned Volcanic Eruption Deaths Over Time')
 plt.grid()
 plt.show()
 
+#After binning, it has been noticed that the data is too random and unreliable before the year 1850. The same steps as before are taken, now from 1850 unwards.
 data_improved = filter_data_by_year(data, 1850)
 data_improved
 
@@ -162,6 +164,7 @@ def moving_average(dataframe, window_size):
     """
     return dataframe['Deaths'].rolling(window=window_size).mean()
 
+# Plot a moving average over the actual data
 data_no_outlier.loc[:, 'Moving_Average'] = moving_average(data_no_outlier.copy(), 3)
 
 plt.figure(figsize=(12, 6))
@@ -209,6 +212,7 @@ def fit_and_plot_model(model_func, x_data, y_data, label, color, p0=None):
     y_fit = model_func(x_data, *params)
     plt.plot(x_data, y_fit, label=label, color=color, linewidth=2)
 
+# Divide the total time period into three periods (1850-1920, 1920-1950, 1950-present) to be able to use multiple models at once 
 period1 = data_no_outlier[(data_no_outlier['Decade'] >= 1850) & (data_no_outlier['Decade'] <= 1920)]
 period2 = data_no_outlier[(data_no_outlier['Decade'] > 1920) & (data_no_outlier['Decade'] <= 1950)]
 period3 = data_no_outlier[(data_no_outlier['Decade'] > 1950)]
@@ -217,6 +221,7 @@ x1, y1 = period1['Decade'].values, period1['Deaths'].values
 x2, y2 = period2['Decade'].values, period2['Deaths'].values
 x3, y3 = period3['Decade'].values, period3['Deaths'].values
 
+# A fully linear model has been tried and plotted
 plt.figure(figsize=(12, 6))
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], 'o', label='Actual Deaths', markersize=5)
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
@@ -231,6 +236,7 @@ plt.legend()
 plt.grid()
 plt.show()
 
+# A combined linear and quadratic model has been tried and plotted
 plt.figure(figsize=(12, 6))
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], 'o', label='Actual Deaths', markersize=5)
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
@@ -245,28 +251,60 @@ plt.legend()
 plt.grid()
 plt.show()
 
-future_decades = np.arange(2020, 2051, 1)
-params_q3, _ = curve_fit(quadratic_model, x3, y3, p0=[1, 0, 1])
+def predict_future_deaths(dataframe, model_func, x_data, y_data, future_years, label, color, initial_params=None):
+    """
+    Predicts future deaths using a specified model function, plots the predictions, 
+    and provides a conclusion on the trend.
 
-future_deaths_q3 = quadratic_model(future_decades, * params_q3)
-future_deaths_q3 = np.maximum(future_deaths_q3, 0)
+    Parameters:
+    dataframe (pd.DataFrame): Historical data used for plotting.
+    model_func (function): The model function to fit for extrapolation.
+    x_data (array-like): X data for fitting the model.
+    y_data (array-like): Y data for fitting the model.
+    future_years (array-like): Array of future years (or decades) for prediction.
+    label (str): Label for the prediction plot line.
+    color (str): Color for the prediction plot line.
+    initial_params (tuple, optional): Initial parameter guesses for the model.
 
-plt.figure(figsize=(12, 6))
+    Returns:
+    None
+    """
+    # Fit the model to current data
+    params, _ = curve_fit(model_func, x_data, y_data, p0=initial_params, maxfev=1000)
+    
+    # Predict future deaths
+    future_deaths = model_func(future_years, *params)
+    future_deaths = np.maximum(future_deaths, 0)  # Prevent negative predictions
+    
+    # Plot historical data, moving average, and future predictions
+    plt.figure(figsize=(12, 6))
+    plt.plot(dataframe['Decade'], dataframe['Deaths'], 'o', label='Actual Deaths', markersize=5)
+    plt.plot(dataframe['Decade'], dataframe['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
+    
+    # Plotting the historical model fit
+    fit_and_plot_model(quadratic_model, x1, y1, 'Quadratic Model (1850-1920)', 'orange')
+    fit_and_plot_model(linear_model, x2, y2, 'Linear Model (1920-1950)', 'green')
+    fit_and_plot_model(quadratic_model, x3, y3, 'Quadratic Model (1950-Present)', 'red')
+    
+    # Plot future predictions
+    plt.plot(future_years, future_deaths, label=label, color=color, linestyle='--')
+    
+    plt.xlabel('Decade')
+    plt.ylabel('Deaths')
+    plt.title('Volcanic Eruption Deaths (Including Predictions for Future Decades)')
+    plt.legend()
+    plt.grid()
+    plt.show()
 
-plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], 'o', label='Actual Deaths', markersize=5)
-plt.plot(data_no_outlier['Decade'], data_no_outlier['Moving_Average'], color='blue', label='Moving Average', linewidth=2)
+    # Conclusion
+    if np.all(future_deaths < y_data.mean()):
+        print("The model predicts a continued decline in volcanic eruption deaths. "
+              "This supports the hypothesis that education and hazard management improvements "
+              "will lead to fewer fatalities.")
+    else:
+        print("The model suggests fluctuations in volcanic eruption deaths, indicating that "
+              "further improvements may be needed to consistently reduce fatalities.")
 
-fit_and_plot_model(quadratic_model, x1, y1, 'Quadratic Model (1850-1920)', 'orange')
-fit_and_plot_model(linear_model, x2, y2, 'Linear Model (1920-1950)', 'green')
-fit_and_plot_model(quadratic_model, x3, y3, 'Quadratic Model (1950-Present)', 'red')
-
-plt.plot(future_decades, future_deaths_q3, label='Quadratic Model (1950-Present) Prediction', color='red', linestyle='--')
-
-plt.xlabel('Decade')
-plt.ylabel('Deaths')
-plt.title('Volcanic Eruption Deaths (Including Predictions for 2020-2030)')
-plt.legend()
-plt.grid()
-plt.show()
-
-print('According to this model, the amount of deaths would go to zero. This is obviously highly unlikely. It is clear, however, that the amount of deaths is decreasing fast and will keep decreasing due to improved education and hazard management.')
+future_decades = np.arange(2020, 2051, 10)  # Predict in decade intervals up to 2050
+predict_future_deaths(data_no_outlier, quadratic_model, x3, y3, future_decades, 
+                      label='Quadratic Model (1950-Present) Prediction', color='red', initial_params=[1, 0, 1])
