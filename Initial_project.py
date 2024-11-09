@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
+# Load and display the dataset
 data = pd.read_csv("volcano-events-2024-10-12_16-24-07_+0200.tsv", sep='\t')
 print(data.head())
 
@@ -13,10 +14,22 @@ plt.title('Volcanic Eruption Deaths Over Time')
 plt.show()
 
 def filter_data_by_year(dataframe, min_year, max_year=None):
+    """
+    Filters the dataset by a minimum year, and optionally a maximum year.
+
+    Parameters:
+    dataframe (pd.DataFrame): The input data with a 'Year' column.
+    min_year (int): The minimum year to filter data.
+    max_year (int, optional): The maximum year to filter data. Defaults to None.
+
+    Returns:
+    pd.DataFrame: The filtered data containing only records within the specified year range.
+    """
     if max_year is not None:
         return dataframe[(dataframe['Year'] >= min_year) & (dataframe['Year'] <= max_year)]
     return dataframe[dataframe['Year'] >= min_year]
 
+# Filter data from 1630 onwards and plot
 data_filtered = filter_data_by_year(data, 1630)
 print(data_filtered.head())
 
@@ -28,13 +41,24 @@ plt.show()
 
 print("Missing values per column (filtered data):\n", data_filtered.isnull().sum())
 
+# Remove duplicate records
 data_cleaned = data_filtered.drop_duplicates()
 
 def aggregate_deaths_by_decade(dataframe):
+    """
+    Aggregates the number of deaths by decade.
+
+    Parameters:
+    dataframe (pd.DataFrame): The input data with 'Year' and 'Deaths' columns.
+
+    Returns:
+    pd.DataFrame: Data aggregated by decade, with total deaths per decade.
+    """
     dataframe['Decade'] = (dataframe['Year'] // 10) * 10
     data_by_decade = dataframe.groupby('Decade').agg({'Deaths': 'sum'}).reset_index()
     return data_by_decade
 
+# Aggregate deaths by decade and plot
 data_by_decade = aggregate_deaths_by_decade(data_cleaned)
 print(data_by_decade)
 
@@ -45,6 +69,17 @@ plt.title('Volcanic Eruption Deaths Over Time (Aggregated by Decade)')
 plt.show()
 
 def remove_outliers(dataframe, column, iqr_multiplier=1.5):
+    """
+    Removes outliers based on the interquartile range (IQR).
+
+    Parameters:
+    dataframe (pd.DataFrame): The input data.
+    column (str): Column to analyze for outliers.
+    iqr_multiplier (float): Multiplier for the IQR to define outliers.
+
+    Returns:
+    pd.DataFrame: Data with outliers removed.
+    """
     Q1 = dataframe[column].quantile(0.25)
     Q3 = dataframe[column].quantile(0.75)
     IQR = Q3 - Q1
@@ -53,6 +88,7 @@ def remove_outliers(dataframe, column, iqr_multiplier=1.5):
     filtered_data = dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
     return filtered_data
 
+# Remove outliers from data and plot
 data_no_outliers = remove_outliers(data_by_decade, 'Deaths', iqr_multiplier=1.5)
 print(data_no_outliers)
 
@@ -63,12 +99,23 @@ plt.title('Volcanic Eruption Deaths Over Time (Without Major Disasters)')
 plt.show()
 
 def bin_data(dataframe, bin_size):
+    """
+    Bins data into intervals of specified size and aggregates deaths.
+
+    Parameters:
+    dataframe (pd.DataFrame): The input data with 'Decade' and 'Deaths' columns.
+    bin_size (int): Size of each bin in years.
+
+    Returns:
+    pd.DataFrame: Binned data with total deaths per bin.
+    """
     dataframe = dataframe.copy()
     dataframe.loc[:, 'Binned_Decade'] = (dataframe['Decade'] // bin_size) * bin_size
     print("Dataframe after adding Binned_Decade:\n", dataframe.head())  
     binned_data = dataframe.groupby('Binned_Decade').agg({'Deaths': 'sum'}).reset_index()
     return binned_data
 
+# Bin data by 50 years and plot
 binned_data = bin_data(data_no_outliers, 50)
 print(binned_data)
 
@@ -103,9 +150,19 @@ plt.title('Volcanic Eruption Deaths Over Time (Without Major Disasters)')
 plt.show()
 
 def moving_average(dataframe, window_size):
+    """
+    Calculates a moving average for the 'Deaths' column.
+
+    Parameters:
+    dataframe (pd.DataFrame): The input data with 'Deaths' column.
+    window_size (int): The window size for the moving average.
+
+    Returns:
+    pd.Series: Moving average values.
+    """
     return dataframe['Deaths'].rolling(window=window_size).mean()
 
-data_no_outlier.loc[:, 'Moving_Average'] = moving_average(data_no_outlier, 3)
+data_no_outlier.loc[:, 'Moving_Average'] = moving_average(data_no_outlier.copy(), 3)
 
 plt.figure(figsize=(12, 6))
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], marker='o', label='Deaths')
@@ -118,18 +175,36 @@ plt.grid()
 plt.show()
 
 def linear_model(x, a, b):
+    """Defines a linear model."""
     return a * x + b
 
 def quadratic_model(x, a, b, c):
+    """Defines a quadratic model."""
     return a * x**2 + b * x + c
 
 def exponential_model(x, a, b, c):
+    """Defines an exponential model."""
     return a * np.exp(b * x) + c
     
 def logarithmic_model(x, a, b):
+    """Defines a logarithmic model."""
     return a * np.log(b * x)
 
 def fit_and_plot_model(model_func, x_data, y_data, label, color, p0=None):
+    """
+    Fits a model to data and plots the result.
+
+    Parameters:
+    model_func (function): Model function to fit to the data.
+    x_data (array-like): Independent variable data.
+    y_data (array-like): Dependent variable data.
+    label (str): Label for the plot.
+    color (str): Color for the plot line.
+    p0 (tuple, optional): Initial parameter guesses for the model.
+
+    Returns:
+    None
+    """
     params, _ = curve_fit(model_func, x_data, y_data, p0=p0, maxfev=1000)
     y_fit = model_func(x_data, *params)
     plt.plot(x_data, y_fit, label=label, color=color, linewidth=2)
