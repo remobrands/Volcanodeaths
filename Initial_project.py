@@ -165,7 +165,8 @@ def moving_average(dataframe, window_size):
     return dataframe['Deaths'].rolling(window=window_size).mean()
 
 # Plot a moving average over the actual data
-data_no_outlier.loc[:, 'Moving_Average'] = moving_average(data_no_outlier.copy(), 3)
+data_no_outlier = data_no_outlier.copy()
+data_no_outlier['Moving_Average'] = moving_average(data_no_outlier, 3)
 
 plt.figure(figsize=(12, 6))
 plt.plot(data_no_outlier['Decade'], data_no_outlier['Deaths'], marker='o', label='Deaths')
