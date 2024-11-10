@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Volcano-deaths"
+version = "0.1.0"
+description = "A simple model to predict the future amount of volcano eruption fatalities"
+author = [ 
+    {name = "Remo Brands", email = "remo.brands@kpnmail.nl"},
+]
+dependencies = ["numpy", "pandas", "matplotlib", "scipy"]
